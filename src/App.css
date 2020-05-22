@@ -1,5 +1,9 @@
 .App {
   text-align: center;
+    padding-left: 5%;
+    padding-right: 5%;
+    padding-top: 5vh;
+    padding-bottom: 5vh;
 }
 
 .App-logo {
@@ -18,7 +22,40 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
-
+.blockBox {
+    display: flex;
+    align-items: center;
+}
+.blockInfo {
+    text-align: left;
+    font-weight: 600;
+    margin: 10px; 
+    margin-left: 0;
+    display: inline-block;
+}
+.brace {
+    float:left;
+    width:5px;
+    border:2px solid black;
+    height: auto;
+    border-right:none;
+    margin: 10px;
+    vertical-align: top;
+    display: inline-block;
+    align-self: stretch;
+}
+.children {
+    text-align: left;
+    margin: 10px;
+    vertical-align: top;
+    display: inline-block;
+}
+.addChild {
+    text-align: left;
+    font-style: italic;
+    cursor: pointer;
+    width: 100%;
+}
 .App-link {
   color: #61dafb;
 }
