@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
@@ -108,10 +108,49 @@ class Block extends React.Component {
 
 
 
+function ThemeToggle() {
+  const [theme, setTheme] = useState('light');
+
+  useEffect(() => {
+    // Get current theme from HTML attribute
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    setTheme(currentTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('theme', newTheme);
+    } catch (e) {
+      // Handle localStorage errors gracefully
+    }
+  };
+
+  return (
+    <button 
+      className="theme-toggle"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      role="switch"
+      aria-checked={theme === 'dark'}
+    >
+      {theme === 'dark' ? '☀️' : '🌙'} 
+      {theme === 'dark' ? 'Light' : 'Dark'}
+    </button>
+  );
+}
+
 function App() {
   return (
     <div className="App">
-      <h1>Warnier-Orr Generator</h1>
+      <div className="app-header">
+        <h1>Warnier-Orr Generator</h1>
+        <ThemeToggle />
+      </div>
       <Block isChild={false} children={[]} title="Parent"   />
     </div>
   );
