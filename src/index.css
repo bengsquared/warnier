@@ -1,11 +1,15 @@
-/* CSS Custom Properties for theming */
+/* Theme tokens - Light theme (default) */
 :root {
   --bg: #ffffff;
   --fg: #111111;
   --surface: #f6f6f6;
   --border: #e5e5e5;
   --link: #0a66c2;
-  --link-hover: #085394;
+  --link-hover: #004182;
+  --input-bg: #ffffff;
+  --input-border: #ccc;
+  --button-bg: #f0f0f0;
+  --button-hover: #e0e0e0;
 }
 
 [data-theme='dark'] {
@@ -14,7 +18,11 @@
   --surface: #171a21;
   --border: #2a2f3a;
   --link: #62a0ff;
-  --link-hover: #4285d4;
+  --link-hover: #4d8fff;
+  --input-bg: #1e2329;
+  --input-border: #3a424d;
+  --button-bg: #2a2f3a;
+  --button-hover: #3a424d;
 }
 
 body {
@@ -26,6 +34,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg);
   color: var(--fg);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 code {

@@ -91,6 +91,21 @@
 .addChild:hover {
     color: var(--link-hover);
 }
+
+.blockTitle input {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--fg);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+.blockTitle input:focus {
+    outline: 2px solid var(--link);
+    outline-offset: 1px;
+}
 .App-link {
   color: #61dafb;
 }

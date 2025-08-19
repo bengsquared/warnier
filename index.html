@@ -4,11 +4,23 @@
     <meta charset="utf-8" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#000000" />
     <meta name="description" content="Warnier-Orr Diagram Generator" />
     <title>Warnier-Orr Diagram Generator</title>
-    <script>(function(){try{var k='theme';var t=localStorage.getItem(k);var d=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t||d);}catch(e){}})()</script>
+    <script>
+      (function() {
+        try {
+          const key = 'theme';
+          const saved = localStorage.getItem(key);
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const theme = saved || (prefersDark ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          // Silently fail if localStorage is not available
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
