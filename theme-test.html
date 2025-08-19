@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark" />
+    <title>Theme Test</title>
+    <style>
+        /* CSS Custom Properties for theming */
+        :root {
+          --bg: #ffffff;
+          --fg: #111111;
+          --surface: #f6f6f6;
+          --border: #e5e5e5;
+          --link: #0a66c2;
+          --link-hover: #085394;
+        }
+
+        [data-theme='dark'] {
+          --bg: #0f1115;
+          --fg: #e6e8eb;
+          --surface: #171a21;
+          --border: #2a2f3a;
+          --link: #62a0ff;
+          --link-hover: #4285d4;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: system-ui;
+            margin: 2rem;
+        }
+        
+        .theme-toggle {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            color: var(--fg);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .brace {
+            width: 5px;
+            border: 2px solid var(--border);
+            height: 50px;
+            display: inline-block;
+            border-right: none;
+        }
+
+        .link {
+            color: var(--link);
+        }
+
+        .link:hover {
+            color: var(--link-hover);
+        }
+    </style>
+    <script>
+        (function(){
+            try{
+                var k='theme';
+                var t=localStorage.getItem(k);
+                var d=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+                document.documentElement.setAttribute('data-theme',t||d);
+            }catch(e){}
+        })()
+    </script>
+</head>
+<body>
+    <h1>Theme Test - Warnier-Orr Diagram Generator</h1>
+    
+    <button class="theme-toggle" onclick="toggleTheme()">
+        🌙 Toggle Theme
+    </button>
+    
+    <div style="margin: 2rem 0;">
+        <h2>Visual Elements</h2>
+        <p>This is a sample paragraph with <a href="#" class="link">a link</a></p>
+        <div class="brace"></div> ← Diagram brace element
+    </div>
+
+    <div>
+        <h3>Color Tokens</h3>
+        <ul>
+            <li>Background: <span style="background: var(--bg); padding: 0.2rem; border: 1px solid var(--border);">var(--bg)</span></li>
+            <li>Foreground: <span style="color: var(--fg);">var(--fg)</span></li>
+            <li>Surface: <span style="background: var(--surface); padding: 0.2rem; border: 1px solid var(--border);">var(--surface)</span></li>
+            <li>Border: <span style="border: 2px solid var(--border); padding: 0.2rem;">var(--border)</span></li>
+            <li>Link: <span style="color: var(--link);">var(--link)</span></li>
+        </ul>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            
+            html.setAttribute('data-theme', newTheme);
+            
+            // Update button text
+            const button = document.querySelector('.theme-toggle');
+            button.textContent = newTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+            
+            // Save to localStorage
+            try {
+                localStorage.setItem('theme', newTheme);
+            } catch (e) {
+                console.log('Could not save theme preference');
+            }
+        }
+        
+        // Initialize button text based on current theme
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const button = document.querySelector('.theme-toggle');
+        button.textContent = currentTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    </script>
+</body>
+</html>
