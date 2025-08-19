@@ -1,6 +1,89 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import logo from './logo.svg';
 import './App.css';
+
+// Theme module
+const theme = (() => {
+  const THEME_KEY = 'theme';
+  const LIGHT = 'light';
+  const DARK = 'dark';
+  
+  const setTheme = (themeName) => {
+    document.documentElement.setAttribute('data-theme', themeName);
+    localStorage.setItem(THEME_KEY, themeName);
+  };
+  
+  const current = () => {
+    return document.documentElement.getAttribute('data-theme') || LIGHT;
+  };
+  
+  const initialize = () => {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved) {
+      setTheme(saved);
+    } else {
+      // Listen to OS preference if no manual override
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const osTheme = mediaQuery.matches ? DARK : LIGHT;
+      setTheme(osTheme);
+      
+      // Listen for changes in OS theme preference
+      mediaQuery.addEventListener('change', (e) => {
+        // Only apply OS theme if user hasn't manually set a preference
+        if (!localStorage.getItem(THEME_KEY)) {
+          setTheme(e.matches ? DARK : LIGHT);
+        }
+      });
+    }
+  };
+  
+  const toggle = () => {
+    const currentTheme = current();
+    const newTheme = currentTheme === LIGHT ? DARK : LIGHT;
+    setTheme(newTheme);
+    return newTheme;
+  };
+  
+  return { setTheme, current, initialize, toggle, LIGHT, DARK };
+})();
+
+// Theme Toggle Component
+function ThemeToggle() {
+  const [currentTheme, setCurrentTheme] = useState(theme.current());
+  
+  useEffect(() => {
+    theme.initialize();
+    setCurrentTheme(theme.current());
+  }, []);
+  
+  const handleToggle = () => {
+    const newTheme = theme.toggle();
+    setCurrentTheme(newTheme);
+  };
+  
+  const isLight = currentTheme === theme.LIGHT;
+  
+  return (
+    <button
+      id="theme-toggle"
+      onClick={handleToggle}
+      role="switch"
+      aria-checked={!isLight}
+      aria-label={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+      style={{
+        padding: '8px 12px',
+        border: '1px solid var(--border-color, #ccc)',
+        borderRadius: '4px',
+        backgroundColor: 'var(--button-bg, #fff)',
+        color: 'var(--text-color, #000)',
+        cursor: 'pointer',
+        fontSize: '14px'
+      }}
+    >
+      {isLight ? '🌙' : '☀️'} {isLight ? 'Dark' : 'Light'}
+    </button>
+  );
+}
 
 
 
