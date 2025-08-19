@@ -84,19 +84,52 @@ class Block extends React.Component {
             title = this.props.title;
         }
         const kids = children.map((child) => 
-            <Block key={child.id} id={child.id} isChild={true} children={child.children} title={child.title} NotifyParent={() => this.ChildChange()} />
+            <Block key={child.id} id={child.id} isChild={true} children={child.children} title={child.title} NotifyParent={(id, title, children) => this.ChildChange(id, title, children)} />
         );
         
         return(
-            <div className="blockBox">
+            <div 
+                className="blockBox"
+                role="group"
+                aria-labelledby={`block-title-${this.props.id || 'root'}`}
+            >
                 <div className="blockInfo">
-                    <div className="blockTitle"><input></input></div>
+                    <label htmlFor={`block-input-${this.props.id || 'root'}`} className="blockTitle-label">
+                        Block Title:
+                    </label>
+                    <input 
+                        id={`block-input-${this.props.id || 'root'}`}
+                        value={title}
+                        onChange={(e) => {
+                            if (!this.props.isChild) {
+                                this.setState({ title: e.target.value });
+                            } else {
+                                this.props.NotifyParent(this.props.id, e.target.value, this.props.children);
+                            }
+                        }}
+                        aria-describedby={`block-desc-${this.props.id || 'root'}`}
+                        className="blockTitle-input"
+                    />
+                    <div id={`block-desc-${this.props.id || 'root'}`} className="sr-only">
+                        Enter a title for this diagram block
+                    </div>
                 </div>
-                <div className="brace"> </div>
+                <div className="brace" aria-hidden="true"> </div>
                 
-                <div className="children">
+                <div 
+                    className="children"
+                    role="group"
+                    aria-label={`Child blocks of ${title || 'unnamed block'}`}
+                >
                     {kids}
-                    <div className="addChild" onClick={() => this.AddChild()}>add child</div>
+                    <button 
+                        className="addChild" 
+                        onClick={() => this.AddChild()}
+                        aria-label={`Add child block to ${title || 'block'}`}
+                        type="button"
+                    >
+                        Add Child
+                    </button>
                 </div>
             </div>
         );
@@ -111,8 +144,13 @@ class Block extends React.Component {
 function App() {
   return (
     <div className="App">
-      <h1>Warnier-Orr Generator</h1>
-      <Block isChild={false} children={[]} title="Parent"   />
+      <header role="banner">
+        <h1>Warnier-Orr Diagram Generator</h1>
+        <p>Create hierarchical Warnier-Orr diagrams with interactive blocks</p>
+      </header>
+      <main role="main" aria-label="Diagram editor">
+        <Block isChild={false} children={[]} title="Root Block" />
+      </main>
     </div>
   );
 }
