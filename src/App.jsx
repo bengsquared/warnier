@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import './App.css';
 
 
@@ -22,6 +22,18 @@ class Block extends React.Component {
             };
         }
         this.blockRef = React.createRef();
+    }
+    
+    componentDidMount() {
+        if (this.props.shouldFocus) {
+            this.blockRef.current?.focus();
+        }
+    }
+    
+    componentDidUpdate(prevProps) {
+        if (this.props.shouldFocus && !prevProps.shouldFocus) {
+            this.blockRef.current?.focus();
+        }
     }
     
     
