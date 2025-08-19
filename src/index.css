@@ -1,3 +1,24 @@
+/* Theme tokens - Light theme (default) */
+:root {
+  --bg: #ffffff;
+  --fg: #111111;
+  --surface: #f6f6f6;
+  --border: #e5e5e5;
+  --link: #0a66c2;
+  --link-hover: #084f96;
+}
+
+/* Theme tokens - Dark theme */
+[data-theme='dark'] {
+  --bg: #0f1115;
+  --fg: #e6e8eb;
+  --surface: #171a21;
+  --border: #2a2f3a;
+  --link: #62a0ff;
+  --link-hover: #4a86d9;
+}
+
+/* Base styles using theme tokens */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
@@ -5,7 +26,34 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: green;
+  background-color: var(--bg);
+  color: var(--fg);
+}
+
+/* Base element styles */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--fg);
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+button {
+  background-color: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--border);
 }
 
 code {
