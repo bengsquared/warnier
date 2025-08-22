@@ -22,6 +22,9 @@ class Block extends React.Component {
               children:kids,
             };
         }
+        
+        // Generate ID for root block if not provided
+        this.blockId = props.id || create_UUID();
     }
     
     
@@ -72,6 +75,12 @@ class Block extends React.Component {
         }
     }
     
+    handleBlockClick = (e) => {
+        e.stopPropagation();
+        if (this.props.onSelectNode) {
+            this.props.onSelectNode(this.blockId);
+        }
+    }
     
     render(){
         let children = [];
@@ -84,11 +93,24 @@ class Block extends React.Component {
             title = this.props.title;
         }
         const kids = children.map((child) => 
-            <Block key={child.id} id={child.id} isChild={true} children={child.children} title={child.title} NotifyParent={() => this.ChildChange()} />
+            <Block 
+                key={child.id} 
+                id={child.id} 
+                isChild={true} 
+                children={child.children} 
+                title={child.title} 
+                NotifyParent={() => this.ChildChange()} 
+                selectedNodeId={this.props.selectedNodeId}
+                onSelectNode={this.props.onSelectNode}
+                onClearSelection={this.props.onClearSelection}
+            />
         );
         
+        const isSelected = this.props.selectedNodeId === this.blockId;
+        const blockClassName = `blockBox${isSelected ? ' selected' : ''}`;
+        
         return(
-            <div className="blockBox">
+            <div className={blockClassName} onClick={this.handleBlockClick}>
                 <div className="blockInfo">
                     <div className="blockTitle"><input></input></div>
                 </div>
@@ -109,10 +131,37 @@ class Block extends React.Component {
 
 
 function App() {
+  const [selectedNodeId, setSelectedNodeId] = React.useState(null);
+
+  const selectNode = (nodeId) => {
+    setSelectedNodeId(nodeId);
+  };
+
+  const clearSelection = () => {
+    setSelectedNodeId(null);
+  };
+
+  const getSelection = () => {
+    return selectedNodeId;
+  };
+
+  const handleAppClick = (e) => {
+    if (e.target.className === 'App') {
+      clearSelection();
+    }
+  };
+
   return (
-    <div className="App">
+    <div className="App" onClick={handleAppClick}>
       <h1>Warnier-Orr Generator</h1>
-      <Block isChild={false} children={[]} title="Parent"   />
+      <Block 
+        isChild={false} 
+        children={[]} 
+        title="Parent" 
+        selectedNodeId={selectedNodeId}
+        onSelectNode={selectNode}
+        onClearSelection={clearSelection}
+      />
     </div>
   );
 }
