@@ -25,6 +25,25 @@
 .blockBox {
     display: flex;
     align-items: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    padding: 2px;
+    transition: border-color 0.2s ease;
+}
+
+.blockBox.selected {
+    border-color: #007acc;
+    background-color: rgba(0, 122, 204, 0.1);
+}
+
+.blockBox:hover {
+    border-color: #cccccc;
+}
+
+.blockBox:focus {
+    outline: 2px solid #007acc;
+    outline-offset: 2px;
 }
 .blockInfo {
     text-align: left;
@@ -32,6 +51,33 @@
     margin: 10px; 
     margin-left: 0;
     display: inline-block;
+    position: relative;
+}
+
+.deleteBtn {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #666;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+}
+
+.deleteBtn:hover {
+    background-color: #ff4444;
+    color: white;
+    border-color: #ff4444;
 }
 .brace {
     float:left;
