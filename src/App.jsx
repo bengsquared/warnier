@@ -38,11 +38,45 @@ class Block extends React.Component {
         currentChildren.push(newprops);
         console.log(currentChildren);
         if(!this.props.isChild){
-            this.setState({
-                children:  currentChildren,
-            });
+            if (this.props.onRootDataChange) {
+                this.props.onRootDataChange({
+                    id: this.props.id,
+                    title: this.props.title,
+                    children: currentChildren
+                });
+            } else {
+                this.setState({
+                    children:  currentChildren,
+                });
+            }
         } else {
             this.props.NotifyParent(this.props.id,this.props.title,currentChildren);
+        }
+        
+        // Select the newly created child
+        if (this.props.onSelectNode) {
+            this.props.onSelectNode(newID);
+        }
+    }
+
+    AddSibling(){
+        if (!this.props.isChild) return; // Root can't have siblings
+        
+        let newID = create_UUID();
+        let newSibling = {
+            id:newID,
+            title:"new block",
+            children:[]
+        }
+        
+        // Notify parent to add sibling after this node
+        if (this.props.NotifyParentAddSibling) {
+            this.props.NotifyParentAddSibling(this.nodeId, newSibling);
+        }
+        
+        // Select the newly created sibling
+        if (this.props.onSelectNode) {
+            this.props.onSelectNode(newID);
         }
     }
     
@@ -66,11 +100,58 @@ class Block extends React.Component {
         }
             
         if(!this.props.isChild){
-            this.setState({
-                children:children,
-            });
+            if (this.props.onRootDataChange) {
+                this.props.onRootDataChange({
+                    id: this.props.id,
+                    title: this.props.title,
+                    children: children
+                });
+            } else {
+                this.setState({
+                    children:children,
+                });
+            }
         } else {
             this.props.NotifyParent(this.props.id,this.props.title,children);
+        }
+    }
+
+    AddSiblingAfter(siblingId, newSibling){
+        let children=[];
+        if(!this.props.isChild){
+            children = this.state.children;
+        } else {
+            children = this.props.children;
+        }
+        
+        // Find the index of the sibling to insert after
+        let insertIndex = -1;
+        for(let i = 0; i < children.length; i++){
+            if (children[i].id === siblingId){
+                insertIndex = i + 1;
+                break;
+            }
+        }
+        
+        if (insertIndex !== -1) {
+            // Insert the new sibling at the correct position
+            children.splice(insertIndex, 0, newSibling);
+            
+            if(!this.props.isChild){
+                if (this.props.onRootDataChange) {
+                    this.props.onRootDataChange({
+                        id: this.props.id,
+                        title: this.props.title,
+                        children: children
+                    });
+                } else {
+                    this.setState({
+                        children:children,
+                    });
+                }
+            } else {
+                this.props.NotifyParent(this.props.id,this.props.title,children);
+            }
         }
     }
 
@@ -115,9 +196,17 @@ class Block extends React.Component {
             children = children.filter(child => child.id !== idToDelete);
             
             if(!this.props.isChild){
-                this.setState({
-                    children:children,
-                });
+                if (this.props.onRootDataChange) {
+                    this.props.onRootDataChange({
+                        id: this.props.id,
+                        title: this.props.title,
+                        children: children
+                    });
+                } else {
+                    this.setState({
+                        children:children,
+                    });
+                }
             } else {
                 this.props.NotifyParent(this.props.id, this.props.title, children);
             }
@@ -128,6 +217,26 @@ class Block extends React.Component {
         e.stopPropagation(); // Prevent event from bubbling to canvas
         if (this.props.onSelectNode) {
             this.props.onSelectNode(this.nodeId);
+        }
+    }
+
+    handleKeyDown = (e) => {
+        if (this.props.selectedNodeId !== this.nodeId) return;
+        
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (e.ctrlKey || e.metaKey) {
+                // Cmd+Enter or Ctrl+Enter: Add child
+                this.AddChild();
+            } else {
+                // Enter: Add sibling (or child if this is root)
+                if (this.props.isChild) {
+                    this.AddSibling();
+                } else {
+                    // Root node: Enter creates child instead of sibling
+                    this.AddChild();
+                }
+            }
         }
     }
     
@@ -153,6 +262,7 @@ class Block extends React.Component {
                 children={child.children} 
                 title={child.title} 
                 NotifyParent={(id, title, children) => this.ChildChange(id, title, children)}
+                NotifyParentAddSibling={(siblingId, newSibling) => this.AddSiblingAfter(siblingId, newSibling)}
                 selectedNodeId={this.props.selectedNodeId}
                 onSelectNode={this.props.onSelectNode}
                 onClearSelection={this.props.onClearSelection}
@@ -164,6 +274,7 @@ class Block extends React.Component {
             <div 
                 className={blockBoxClass}
                 onClick={this.handleBlockClick}
+                onKeyDown={this.handleKeyDown}
                 tabIndex={isSelected ? 0 : -1}
                 ref={isSelected ? (el) => { if (el) el.focus(); } : null}
             >
@@ -204,8 +315,16 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedNodeId: null
+      selectedNodeId: null,
+      rootData: {
+        id: "root",
+        title: "Parent", 
+        children: []
+      }
     };
+    this.history = [];
+    this.historyIndex = -1;
+    this.saveStateToHistory();
   }
 
   selectNode = (nodeId) => {
@@ -220,6 +339,51 @@ class App extends React.Component {
     return this.state.selectedNodeId;
   }
 
+  saveStateToHistory = () => {
+    const stateSnapshot = {
+      rootData: JSON.parse(JSON.stringify(this.state.rootData)),
+      selectedNodeId: this.state.selectedNodeId
+    };
+    
+    // Remove any future history if we're not at the end
+    this.history = this.history.slice(0, this.historyIndex + 1);
+    this.history.push(stateSnapshot);
+    this.historyIndex = this.history.length - 1;
+    
+    // Limit history size to prevent memory issues
+    if (this.history.length > 50) {
+      this.history.shift();
+      this.historyIndex--;
+    }
+  }
+
+  undo = () => {
+    if (this.historyIndex > 0) {
+      this.historyIndex--;
+      const state = this.history[this.historyIndex];
+      this.setState({
+        rootData: JSON.parse(JSON.stringify(state.rootData)),
+        selectedNodeId: state.selectedNodeId
+      });
+    }
+  }
+
+  redo = () => {
+    if (this.historyIndex < this.history.length - 1) {
+      this.historyIndex++;
+      const state = this.history[this.historyIndex];
+      this.setState({
+        rootData: JSON.parse(JSON.stringify(state.rootData)),
+        selectedNodeId: state.selectedNodeId
+      });
+    }
+  }
+
+  onRootDataChange = (newRootData) => {
+    this.setState({ rootData: newRootData });
+    this.saveStateToHistory();
+  }
+
   // Expose selection API globally for programmatic access
   componentDidMount() {
     window.warnier_selection = {
@@ -227,6 +391,39 @@ class App extends React.Component {
       clearSelection: this.clearSelection,
       getSelectedNodeId: this.getSelectedNodeId
     };
+    
+    // Add global keyboard handler for empty editor case
+    document.addEventListener('keydown', this.handleGlobalKeyDown);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('keydown', this.handleGlobalKeyDown);
+  }
+
+  handleGlobalKeyDown = (e) => {
+    // Handle undo/redo
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        this.redo();
+      } else {
+        this.undo();
+      }
+      return;
+    }
+    
+    if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+      e.preventDefault();
+      this.redo();
+      return;
+    }
+    
+    // Only handle when no node is selected and editor is empty
+    if (this.state.selectedNodeId === null && e.key === 'Enter') {
+      e.preventDefault();
+      // Select the root node to enable editing
+      this.selectNode('root');
+    }
   }
 
   handleCanvasClick = (e) => {
@@ -242,13 +439,14 @@ class App extends React.Component {
         <h1>Warnier-Orr Generator</h1>
         <Block 
           isChild={false} 
-          children={[]} 
-          title="Parent"
-          id="root"
+          children={this.state.rootData.children} 
+          title={this.state.rootData.title}
+          id={this.state.rootData.id}
           selectedNodeId={this.state.selectedNodeId}
           onSelectNode={this.selectNode}
           onClearSelection={this.clearSelection}
           onDeleteChild={() => {}} // Root block can't be deleted
+          onRootDataChange={this.onRootDataChange}
         />
       </div>
     );
