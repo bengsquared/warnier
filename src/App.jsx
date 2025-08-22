@@ -2,6 +2,9 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
+// Helper function to check if the event target is an editable element
+const isEditableTarget = (el) => el && el.closest('input, textarea, [contenteditable="true"], [data-editable]') !== null;
+
 
 
 class Block extends React.Component {
@@ -20,12 +23,21 @@ class Block extends React.Component {
             this.state = {
               title:name,
               children:kids,
+              isEditing: false
             };
         }
         // Generate ID if not provided
         this.nodeId = props.id || create_UUID();
+        this.inputRef = React.createRef();
     }
     
+    focusInput = () => {
+        requestAnimationFrame(() => {
+            if (this.inputRef.current) {
+                this.inputRef.current.focus();
+            }
+        });
+    }
     
     AddChild(){
         let currentChildren = this.props.children;
@@ -38,24 +50,24 @@ class Block extends React.Component {
         currentChildren.push(newprops);
         console.log(currentChildren);
         if(!this.props.isChild){
+            this.setState({
+                children: currentChildren,
+            });
             if (this.props.onRootDataChange) {
                 this.props.onRootDataChange({
                     id: this.props.id,
-                    title: this.props.title,
+                    title: this.state.title,
                     children: currentChildren
-                });
-            } else {
-                this.setState({
-                    children:  currentChildren,
                 });
             }
         } else {
             this.props.NotifyParent(this.props.id,this.props.title,currentChildren);
         }
         
-        // Select the newly created child
+        // Select the newly created child and focus its input
         if (this.props.onSelectNode) {
             this.props.onSelectNode(newID);
+            // Focus will be handled by the newly selected node's componentDidUpdate
         }
     }
 
@@ -74,9 +86,10 @@ class Block extends React.Component {
             this.props.NotifyParentAddSibling(this.nodeId, newSibling);
         }
         
-        // Select the newly created sibling
+        // Select the newly created sibling and focus its input
         if (this.props.onSelectNode) {
             this.props.onSelectNode(newID);
+            // Focus will be handled by the newly selected node's componentDidUpdate
         }
     }
     
@@ -220,8 +233,48 @@ class Block extends React.Component {
         }
     }
 
+    handleTitleChange = (e) => {
+        const newTitle = e.target.value;
+        if(!this.props.isChild){
+            this.setState({ title: newTitle });
+            // Notify App component of root data change
+            if (this.props.onRootDataChange) {
+                this.props.onRootDataChange({
+                    id: this.props.id,
+                    title: newTitle,
+                    children: this.state.children
+                });
+            }
+        } else {
+            // Notify parent of title change
+            this.props.NotifyParent(this.props.id, newTitle, this.props.children);
+        }
+    }
+
+    startEditing = () => {
+        if(!this.props.isChild) {
+            this.setState({ isEditing: true });
+        }
+    }
+
+    stopEditing = () => {
+        if(!this.props.isChild) {
+            this.setState({ isEditing: false });
+        }
+    }
+
+    componentDidUpdate(prevProps) {
+        // Focus input when this node becomes selected
+        if (prevProps.selectedNodeId !== this.props.selectedNodeId && this.props.selectedNodeId === this.nodeId) {
+            this.focusInput();
+        }
+    }
+
     handleKeyDown = (e) => {
         if (this.props.selectedNodeId !== this.nodeId) return;
+        
+        // Don't handle keyboard shortcuts when editing text or composing
+        if (isEditableTarget(e.target) || e.isComposing) return;
         
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -276,10 +329,23 @@ class Block extends React.Component {
                 onClick={this.handleBlockClick}
                 onKeyDown={this.handleKeyDown}
                 tabIndex={isSelected ? 0 : -1}
-                ref={isSelected ? (el) => { if (el) el.focus(); } : null}
             >
                 <div className="blockInfo">
-                    <div className="blockTitle"><input value={title} readOnly></input></div>
+                    <div className="blockTitle">
+                        <input 
+                            ref={this.inputRef}
+                            value={title} 
+                            onChange={this.handleTitleChange}
+                            onFocus={this.startEditing}
+                            onBlur={this.stopEditing}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.target.blur(); // Exit editing mode
+                                }
+                                e.stopPropagation(); // Prevent block keyboard handlers
+                            }}
+                        />
+                    </div>
                     {this.props.isChild && (
                         <button 
                             className="deleteBtn" 
@@ -348,6 +414,18 @@ class App extends React.Component {
   }
 
   handleGlobalKeyDown = (e) => {
+    // Handle undo/redo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      this.undo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      e.preventDefault();
+      this.redo();
+      return;
+    }
+    
     // Only handle Enter when no node is selected (empty editor case)
     if (this.state.selectedNodeId === null && e.key === 'Enter') {
       e.preventDefault();
@@ -369,13 +447,14 @@ class App extends React.Component {
         <h1>Warnier-Orr Generator</h1>
         <Block 
           isChild={false} 
-          children={[]} 
-          title="Parent"
-          id="root"
+          children={this.state.rootData.children} 
+          title={this.state.rootData.title}
+          id={this.state.rootData.id}
           selectedNodeId={this.state.selectedNodeId}
           onSelectNode={this.selectNode}
           onClearSelection={this.clearSelection}
           onDeleteChild={() => {}} // Root block can't be deleted
+          onRootDataChange={this.onRootDataChange}
         />
       </div>
     );
