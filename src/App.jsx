@@ -315,16 +315,8 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedNodeId: null,
-      rootData: {
-        id: "root",
-        title: "Parent", 
-        children: []
-      }
+      selectedNodeId: null
     };
-    this.history = [];
-    this.historyIndex = -1;
-    this.saveStateToHistory();
   }
 
   selectNode = (nodeId) => {
@@ -337,51 +329,6 @@ class App extends React.Component {
 
   getSelectedNodeId = () => {
     return this.state.selectedNodeId;
-  }
-
-  saveStateToHistory = () => {
-    const stateSnapshot = {
-      rootData: JSON.parse(JSON.stringify(this.state.rootData)),
-      selectedNodeId: this.state.selectedNodeId
-    };
-    
-    // Remove any future history if we're not at the end
-    this.history = this.history.slice(0, this.historyIndex + 1);
-    this.history.push(stateSnapshot);
-    this.historyIndex = this.history.length - 1;
-    
-    // Limit history size to prevent memory issues
-    if (this.history.length > 50) {
-      this.history.shift();
-      this.historyIndex--;
-    }
-  }
-
-  undo = () => {
-    if (this.historyIndex > 0) {
-      this.historyIndex--;
-      const state = this.history[this.historyIndex];
-      this.setState({
-        rootData: JSON.parse(JSON.stringify(state.rootData)),
-        selectedNodeId: state.selectedNodeId
-      });
-    }
-  }
-
-  redo = () => {
-    if (this.historyIndex < this.history.length - 1) {
-      this.historyIndex++;
-      const state = this.history[this.historyIndex];
-      this.setState({
-        rootData: JSON.parse(JSON.stringify(state.rootData)),
-        selectedNodeId: state.selectedNodeId
-      });
-    }
-  }
-
-  onRootDataChange = (newRootData) => {
-    this.setState({ rootData: newRootData });
-    this.saveStateToHistory();
   }
 
   // Expose selection API globally for programmatic access
@@ -401,24 +348,7 @@ class App extends React.Component {
   }
 
   handleGlobalKeyDown = (e) => {
-    // Handle undo/redo
-    if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        this.redo();
-      } else {
-        this.undo();
-      }
-      return;
-    }
-    
-    if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
-      e.preventDefault();
-      this.redo();
-      return;
-    }
-    
-    // Only handle when no node is selected and editor is empty
+    // Only handle Enter when no node is selected (empty editor case)
     if (this.state.selectedNodeId === null && e.key === 'Enter') {
       e.preventDefault();
       // Select the root node to enable editing
@@ -439,14 +369,13 @@ class App extends React.Component {
         <h1>Warnier-Orr Generator</h1>
         <Block 
           isChild={false} 
-          children={this.state.rootData.children} 
-          title={this.state.rootData.title}
-          id={this.state.rootData.id}
+          children={[]} 
+          title="Parent"
+          id="root"
           selectedNodeId={this.state.selectedNodeId}
           onSelectNode={this.selectNode}
           onClearSelection={this.clearSelection}
           onDeleteChild={() => {}} // Root block can't be deleted
-          onRootDataChange={this.onRootDataChange}
         />
       </div>
     );
