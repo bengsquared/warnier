@@ -230,6 +230,7 @@ class Block extends React.Component {
                 children={child.children} 
                 title={child.title} 
                 NotifyParent={(id, title, children) => this.ChildChange(id, title, children)}
+                NotifyParentAddSibling={(siblingId, newSibling) => this.AddSiblingAfter(siblingId, newSibling)}
                 selectedNodeId={this.props.selectedNodeId}
                 onSelectNode={this.props.onSelectNode}
                 onClearSelection={this.props.onClearSelection}
@@ -282,8 +283,16 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedNodeId: null
+      selectedNodeId: null,
+      rootData: {
+        id: "root",
+        title: "Parent", 
+        children: []
+      }
     };
+    this.history = [];
+    this.historyIndex = -1;
+    this.saveStateToHistory();
   }
 
   selectNode = (nodeId) => {
@@ -298,6 +307,51 @@ class App extends React.Component {
     return this.state.selectedNodeId;
   }
 
+  saveStateToHistory = () => {
+    const stateSnapshot = {
+      rootData: JSON.parse(JSON.stringify(this.state.rootData)),
+      selectedNodeId: this.state.selectedNodeId
+    };
+    
+    // Remove any future history if we're not at the end
+    this.history = this.history.slice(0, this.historyIndex + 1);
+    this.history.push(stateSnapshot);
+    this.historyIndex = this.history.length - 1;
+    
+    // Limit history size to prevent memory issues
+    if (this.history.length > 50) {
+      this.history.shift();
+      this.historyIndex--;
+    }
+  }
+
+  undo = () => {
+    if (this.historyIndex > 0) {
+      this.historyIndex--;
+      const state = this.history[this.historyIndex];
+      this.setState({
+        rootData: JSON.parse(JSON.stringify(state.rootData)),
+        selectedNodeId: state.selectedNodeId
+      });
+    }
+  }
+
+  redo = () => {
+    if (this.historyIndex < this.history.length - 1) {
+      this.historyIndex++;
+      const state = this.history[this.historyIndex];
+      this.setState({
+        rootData: JSON.parse(JSON.stringify(state.rootData)),
+        selectedNodeId: state.selectedNodeId
+      });
+    }
+  }
+
+  onRootDataChange = (newRootData) => {
+    this.setState({ rootData: newRootData });
+    this.saveStateToHistory();
+  }
+
   // Expose selection API globally for programmatic access
   componentDidMount() {
     window.warnier_selection = {
@@ -305,6 +359,22 @@ class App extends React.Component {
       clearSelection: this.clearSelection,
       getSelectedNodeId: this.getSelectedNodeId
     };
+    
+    // Add global keyboard handler for empty editor case
+    document.addEventListener('keydown', this.handleGlobalKeyDown);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('keydown', this.handleGlobalKeyDown);
+  }
+
+  handleGlobalKeyDown = (e) => {
+    // Only handle when no node is selected and editor is empty
+    if (this.state.selectedNodeId === null && e.key === 'Enter') {
+      e.preventDefault();
+      // Select the root node to enable editing
+      this.selectNode('root');
+    }
   }
 
   handleCanvasClick = (e) => {
