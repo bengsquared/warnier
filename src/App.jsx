@@ -44,6 +44,32 @@ class Block extends React.Component {
         } else {
             this.props.NotifyParent(this.props.id,this.props.title,currentChildren);
         }
+        
+        // Select the newly created child
+        if (this.props.onSelectNode) {
+            this.props.onSelectNode(newID);
+        }
+    }
+
+    AddSibling(){
+        if (!this.props.isChild) return; // Root can't have siblings
+        
+        let newID = create_UUID();
+        let newSibling = {
+            id:newID,
+            title:"new block",
+            children:[]
+        }
+        
+        // Notify parent to add sibling after this node
+        if (this.props.NotifyParentAddSibling) {
+            this.props.NotifyParentAddSibling(this.nodeId, newSibling);
+        }
+        
+        // Select the newly created sibling
+        if (this.props.onSelectNode) {
+            this.props.onSelectNode(newID);
+        }
     }
     
     ChildChange(id,title,childArray){
@@ -71,6 +97,37 @@ class Block extends React.Component {
             });
         } else {
             this.props.NotifyParent(this.props.id,this.props.title,children);
+        }
+    }
+
+    AddSiblingAfter(siblingId, newSibling){
+        let children=[];
+        if(!this.props.isChild){
+            children = this.state.children;
+        } else {
+            children = this.props.children;
+        }
+        
+        // Find the index of the sibling to insert after
+        let insertIndex = -1;
+        for(let i = 0; i < children.length; i++){
+            if (children[i].id === siblingId){
+                insertIndex = i + 1;
+                break;
+            }
+        }
+        
+        if (insertIndex !== -1) {
+            // Insert the new sibling at the correct position
+            children.splice(insertIndex, 0, newSibling);
+            
+            if(!this.props.isChild){
+                this.setState({
+                    children:children,
+                });
+            } else {
+                this.props.NotifyParent(this.props.id,this.props.title,children);
+            }
         }
     }
 
@@ -130,6 +187,26 @@ class Block extends React.Component {
             this.props.onSelectNode(this.nodeId);
         }
     }
+
+    handleKeyDown = (e) => {
+        if (this.props.selectedNodeId !== this.nodeId) return;
+        
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (e.ctrlKey || e.metaKey) {
+                // Cmd+Enter or Ctrl+Enter: Add child
+                this.AddChild();
+            } else {
+                // Enter: Add sibling (or child if this is root)
+                if (this.props.isChild) {
+                    this.AddSibling();
+                } else {
+                    // Root node: Enter creates child instead of sibling
+                    this.AddChild();
+                }
+            }
+        }
+    }
     
     render(){
         let children = [];
@@ -164,6 +241,7 @@ class Block extends React.Component {
             <div 
                 className={blockBoxClass}
                 onClick={this.handleBlockClick}
+                onKeyDown={this.handleKeyDown}
                 tabIndex={isSelected ? 0 : -1}
                 ref={isSelected ? (el) => { if (el) el.focus(); } : null}
             >
