@@ -2,6 +2,9 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
+// Helper function to check if the event target is an editable element
+const isEditableTarget = (el) => el && el.closest('input, textarea, [contenteditable="true"], [data-editable]') !== null;
+
 
 
 class Block extends React.Component {
@@ -25,8 +28,16 @@ class Block extends React.Component {
         }
         // Generate ID if not provided
         this.nodeId = props.id || create_UUID();
+        this.inputRef = React.createRef();
     }
     
+    focusInput = () => {
+        requestAnimationFrame(() => {
+            if (this.inputRef.current) {
+                this.inputRef.current.focus();
+            }
+        });
+    }
     
     AddChild(){
         let currentChildren = this.props.children;
@@ -53,9 +64,10 @@ class Block extends React.Component {
             this.props.NotifyParent(this.props.id,this.props.title,currentChildren);
         }
         
-        // Select the newly created child
+        // Select the newly created child and focus its input
         if (this.props.onSelectNode) {
             this.props.onSelectNode(newID);
+            // Focus will be handled by the newly selected node's componentDidUpdate
         }
     }
 
@@ -74,9 +86,10 @@ class Block extends React.Component {
             this.props.NotifyParentAddSibling(this.nodeId, newSibling);
         }
         
-        // Select the newly created sibling
+        // Select the newly created sibling and focus its input
         if (this.props.onSelectNode) {
             this.props.onSelectNode(newID);
+            // Focus will be handled by the newly selected node's componentDidUpdate
         }
     }
     
@@ -250,12 +263,18 @@ class Block extends React.Component {
         }
     }
 
+    componentDidUpdate(prevProps) {
+        // Focus input when this node becomes selected
+        if (prevProps.selectedNodeId !== this.props.selectedNodeId && this.props.selectedNodeId === this.nodeId) {
+            this.focusInput();
+        }
+    }
+
     handleKeyDown = (e) => {
         if (this.props.selectedNodeId !== this.nodeId) return;
         
-        // Don't handle keyboard shortcuts when editing text
-        const isEditingText = !this.props.isChild ? this.state.isEditing : false;
-        if (isEditingText) return;
+        // Don't handle keyboard shortcuts when editing text or composing
+        if (isEditableTarget(e.target) || e.isComposing) return;
         
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -310,11 +329,11 @@ class Block extends React.Component {
                 onClick={this.handleBlockClick}
                 onKeyDown={this.handleKeyDown}
                 tabIndex={isSelected ? 0 : -1}
-                ref={isSelected ? (el) => { if (el) el.focus(); } : null}
             >
                 <div className="blockInfo">
                     <div className="blockTitle">
                         <input 
+                            ref={this.inputRef}
                             value={title} 
                             onChange={this.handleTitleChange}
                             onFocus={this.startEditing}
