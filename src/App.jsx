@@ -20,6 +20,7 @@ class Block extends React.Component {
             this.state = {
               title:name,
               children:kids,
+              isEditing: false
             };
         }
         // Generate ID if not provided
@@ -38,15 +39,14 @@ class Block extends React.Component {
         currentChildren.push(newprops);
         console.log(currentChildren);
         if(!this.props.isChild){
+            this.setState({
+                children: currentChildren,
+            });
             if (this.props.onRootDataChange) {
                 this.props.onRootDataChange({
                     id: this.props.id,
-                    title: this.props.title,
+                    title: this.state.title,
                     children: currentChildren
-                });
-            } else {
-                this.setState({
-                    children:  currentChildren,
                 });
             }
         } else {
@@ -220,8 +220,42 @@ class Block extends React.Component {
         }
     }
 
+    handleTitleChange = (e) => {
+        const newTitle = e.target.value;
+        if(!this.props.isChild){
+            this.setState({ title: newTitle });
+            // Notify App component of root data change
+            if (this.props.onRootDataChange) {
+                this.props.onRootDataChange({
+                    id: this.props.id,
+                    title: newTitle,
+                    children: this.state.children
+                });
+            }
+        } else {
+            // Notify parent of title change
+            this.props.NotifyParent(this.props.id, newTitle, this.props.children);
+        }
+    }
+
+    startEditing = () => {
+        if(!this.props.isChild) {
+            this.setState({ isEditing: true });
+        }
+    }
+
+    stopEditing = () => {
+        if(!this.props.isChild) {
+            this.setState({ isEditing: false });
+        }
+    }
+
     handleKeyDown = (e) => {
         if (this.props.selectedNodeId !== this.nodeId) return;
+        
+        // Don't handle keyboard shortcuts when editing text
+        const isEditingText = !this.props.isChild ? this.state.isEditing : false;
+        if (isEditingText) return;
         
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -279,7 +313,20 @@ class Block extends React.Component {
                 ref={isSelected ? (el) => { if (el) el.focus(); } : null}
             >
                 <div className="blockInfo">
-                    <div className="blockTitle"><input value={title} readOnly></input></div>
+                    <div className="blockTitle">
+                        <input 
+                            value={title} 
+                            onChange={this.handleTitleChange}
+                            onFocus={this.startEditing}
+                            onBlur={this.stopEditing}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.target.blur(); // Exit editing mode
+                                }
+                                e.stopPropagation(); // Prevent block keyboard handlers
+                            }}
+                        />
+                    </div>
                     {this.props.isChild && (
                         <button 
                             className="deleteBtn" 
@@ -348,6 +395,18 @@ class App extends React.Component {
   }
 
   handleGlobalKeyDown = (e) => {
+    // Handle undo/redo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      this.undo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      e.preventDefault();
+      this.redo();
+      return;
+    }
+    
     // Only handle Enter when no node is selected (empty editor case)
     if (this.state.selectedNodeId === null && e.key === 'Enter') {
       e.preventDefault();
@@ -369,13 +428,14 @@ class App extends React.Component {
         <h1>Warnier-Orr Generator</h1>
         <Block 
           isChild={false} 
-          children={[]} 
-          title="Parent"
-          id="root"
+          children={this.state.rootData.children} 
+          title={this.state.rootData.title}
+          id={this.state.rootData.id}
           selectedNodeId={this.state.selectedNodeId}
           onSelectNode={this.selectNode}
           onClearSelection={this.clearSelection}
           onDeleteChild={() => {}} // Root block can't be deleted
+          onRootDataChange={this.onRootDataChange}
         />
       </div>
     );
