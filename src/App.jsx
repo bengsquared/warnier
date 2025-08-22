@@ -38,9 +38,17 @@ class Block extends React.Component {
         currentChildren.push(newprops);
         console.log(currentChildren);
         if(!this.props.isChild){
-            this.setState({
-                children:  currentChildren,
-            });
+            if (this.props.onRootDataChange) {
+                this.props.onRootDataChange({
+                    id: this.props.id,
+                    title: this.props.title,
+                    children: currentChildren
+                });
+            } else {
+                this.setState({
+                    children:  currentChildren,
+                });
+            }
         } else {
             this.props.NotifyParent(this.props.id,this.props.title,currentChildren);
         }
@@ -92,9 +100,17 @@ class Block extends React.Component {
         }
             
         if(!this.props.isChild){
-            this.setState({
-                children:children,
-            });
+            if (this.props.onRootDataChange) {
+                this.props.onRootDataChange({
+                    id: this.props.id,
+                    title: this.props.title,
+                    children: children
+                });
+            } else {
+                this.setState({
+                    children:children,
+                });
+            }
         } else {
             this.props.NotifyParent(this.props.id,this.props.title,children);
         }
@@ -122,9 +138,17 @@ class Block extends React.Component {
             children.splice(insertIndex, 0, newSibling);
             
             if(!this.props.isChild){
-                this.setState({
-                    children:children,
-                });
+                if (this.props.onRootDataChange) {
+                    this.props.onRootDataChange({
+                        id: this.props.id,
+                        title: this.props.title,
+                        children: children
+                    });
+                } else {
+                    this.setState({
+                        children:children,
+                    });
+                }
             } else {
                 this.props.NotifyParent(this.props.id,this.props.title,children);
             }
@@ -172,9 +196,17 @@ class Block extends React.Component {
             children = children.filter(child => child.id !== idToDelete);
             
             if(!this.props.isChild){
-                this.setState({
-                    children:children,
-                });
+                if (this.props.onRootDataChange) {
+                    this.props.onRootDataChange({
+                        id: this.props.id,
+                        title: this.props.title,
+                        children: children
+                    });
+                } else {
+                    this.setState({
+                        children:children,
+                    });
+                }
             } else {
                 this.props.NotifyParent(this.props.id, this.props.title, children);
             }
@@ -369,6 +401,23 @@ class App extends React.Component {
   }
 
   handleGlobalKeyDown = (e) => {
+    // Handle undo/redo
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        this.redo();
+      } else {
+        this.undo();
+      }
+      return;
+    }
+    
+    if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+      e.preventDefault();
+      this.redo();
+      return;
+    }
+    
     // Only handle when no node is selected and editor is empty
     if (this.state.selectedNodeId === null && e.key === 'Enter') {
       e.preventDefault();
@@ -390,13 +439,14 @@ class App extends React.Component {
         <h1>Warnier-Orr Generator</h1>
         <Block 
           isChild={false} 
-          children={[]} 
-          title="Parent"
-          id="root"
+          children={this.state.rootData.children} 
+          title={this.state.rootData.title}
+          id={this.state.rootData.id}
           selectedNodeId={this.state.selectedNodeId}
           onSelectNode={this.selectNode}
           onClearSelection={this.clearSelection}
           onDeleteChild={() => {}} // Root block can't be deleted
+          onRootDataChange={this.onRootDataChange}
         />
       </div>
     );
